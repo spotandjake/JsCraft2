@@ -1,0 +1,99 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<title>JSCRAFT</title>
+		<link rel="icon" href="media/logo.ico">
+		<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+		<link href="style/main.css" rel="stylesheet" type="text/css">
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js'></script>
+		<script src="js/glMatrix-1.2.min.js" type="text/javascript"></script>
+		<script src="js/blocks.js" type="text/javascript"></script>
+		<script src="js/helpers.js" type="text/javascript"></script>
+		<script src="js/world.js" type="text/javascript"></script>
+		<script src="js/render.js" type="text/javascript"></script>
+		<script src="js/physics.js" type="text/javascript"></script>
+		<script src="js/player.js" type="text/javascript"></script>
+    <script src="js/fullscreen.js" type="text/javascript"></script>
+		<script src="js/songs.js" type="text/javascript"></script>
+		<script src="js/fps.js"></script>
+		<script src="js/sight.js" type="text/javascript"></script>
+		<script src="js/file.js" type="text/javascript"></script>
+		<script src="js/simplex-noise.js"></script>
+	</head>
+	<body oncontextmenu="return false" style="margin: 0px;" onclick="sound()">
+		<canvas id="materialselector" class="materialselectorsingle" width="70px" height="70px"></canvas>
+		<canvas id="renderSurface"></canvas>
+    <section id="sec"></section>
+		<div id="infobox">
+			<span id="infobox_text"><div id="fps"></div></span>
+			<h id="cords"></h>
+		</div>
+		<div id="Buttons-div" style="top: 50%;">
+			<input type="file" style="display: none;" id="input-file">
+			<button class="button"><label for="input-file" class="filelabel">Choose a Save File</label></button>
+			<button class="button" onclick="makenew()">Create New World</button>
+			<input id="texture">
+			<input id="skin">
+		</div>
+		<script type="text/javascript">	
+		document.getElementById('input-file').addEventListener('change', importworld);
+		var but = document.getElementById('Buttons-div');
+		function makenew() {
+			but.style.visibility = "hidden";
+			var world = new World(60, 60, 50);//x, y, z
+			world.createFlatWorld(10);//world height
+			startup(world);
+		}
+		function importworld(event) {
+			const input = event.target
+  			if ('files' in input && input.files.length > 0) {
+    			var content = placeFileContent(input.files[0])
+  			}
+		}
+		function placeFileContent(file) {
+  			readFileContent(file).then(content => {importworld2(content);})
+    		.catch(error => console.log(error))
+		}
+		function importworld2(content) {
+      var world = new World(60, 60, 50);//x, y, z
+      but.style.visibility = "hidden";
+			world.loadFromStr(content)
+      startup(world);
+		}
+		function startup(world) {
+			Sight.init();		
+			var SaveBtn = document.getElementById( 'Save' );
+			SaveBtn.addEventListener( 'click', function ( event ) {
+				download("save.JsCraft", world.saveToClip())
+			}, false );
+			if (document.getElementById('texture').value.length != 0) {
+				var texture = document.getElementById('texture').value;
+			} else {
+				var texture = null
+			}
+			if (document.getElementById('skin').value.length != 0) {
+				var skin = document.getElementById('skin').value;
+			} else {
+				var skin = null
+			}
+			var render = new Renderer("renderSurface", texture, skin);
+			render.setWorld(world, 8);
+			render.setPerspective(60, 0.01, 200);
+			var physics = new Physics();
+			physics.setWorld(world);
+			var player = new Player();
+			player.setWorld(world);
+			player.setInputCanvas( "renderSurface" );		
+			setInterval(function() {
+				var time = new Date().getTime() / 1000.0;
+				physics.simulate();
+				player.update();
+				render.buildChunks( 1 );
+				render.setCamera(player.getEyePos().toArray(), player.angles);
+				render.draw( world );
+				while (new Date().getTime() / 1000 - time < 0.016);
+			}, 1);
+		}
+		</script>
+	</body>
+</html>
